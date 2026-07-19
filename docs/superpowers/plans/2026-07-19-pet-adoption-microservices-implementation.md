@@ -195,6 +195,14 @@ class ApiResponseTest {
     assertThat(response.data()).isEqualTo("ok");
     assertThat(response.message()).isEqualTo("success");
   }
+
+  @Test
+  void errorResponseContainsCodeAndMessage() {
+    ErrorResponse response = ErrorResponse.of("CODE", "message");
+
+    assertThat(response.code()).isEqualTo("CODE");
+    assertThat(response.message()).isEqualTo("message");
+  }
 }
 ```
 
@@ -220,6 +228,16 @@ public record ApiResponse<T>(boolean success, String message, T data) {
 
   public static <T> ApiResponse<T> failure(String message) {
     return new ApiResponse<>(false, message, null);
+  }
+}
+```
+
+```java
+package com.petadoption.common.api;
+
+public record ErrorResponse(String code, String message) {
+  public static ErrorResponse of(String code, String message) {
+    return new ErrorResponse(code, message);
   }
 }
 ```
@@ -281,6 +299,8 @@ git commit -m "feat(公共库): 添加通用响应和事件常量"
 
 每个服务 `pom.xml` 使用相同模式。以 `pet-service` 为例：
 
+Spring Boot 服务模块必须声明 `spring-boot-maven-plugin`，确保后续容器镜像可以通过 `java -jar app.jar` 运行；插件版本由根 POM 的 `pluginManagement` 管理。
+
 ```xml
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -314,6 +334,15 @@ git commit -m "feat(公共库): 添加通用响应和事件常量"
       <scope>test</scope>
     </dependency>
   </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-maven-plugin</artifactId>
+      </plugin>
+    </plugins>
+  </build>
 </project>
 ```
 
