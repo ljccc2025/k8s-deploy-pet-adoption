@@ -8,4 +8,6 @@ interface AdoptionApplicationRepository extends JpaRepository<AdoptionApplicatio
   List<AdoptionApplication> findAllByOrderByCreatedAtDesc();
 
   List<AdoptionApplication> findByUserIdOrderByCreatedAtDesc(UUID userId);
+
+  boolean existsByActivePetId(UUID petId);
 }

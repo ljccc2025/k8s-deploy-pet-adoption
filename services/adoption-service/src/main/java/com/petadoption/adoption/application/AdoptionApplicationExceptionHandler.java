@@ -4,6 +4,8 @@ import com.petadoption.common.api.ApiResponse;
 import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -29,6 +31,15 @@ class AdoptionApplicationExceptionHandler {
   @ResponseStatus(HttpStatus.CONFLICT)
   ApiResponse<Void> invalidState(InvalidAdoptionStateException exception) {
     return ApiResponse.failure(exception.getMessage());
+  }
+
+  @ExceptionHandler({
+      OptimisticLockingFailureException.class,
+      ObjectOptimisticLockingFailureException.class
+  })
+  @ResponseStatus(HttpStatus.CONFLICT)
+  ApiResponse<Void> optimisticLockingFailed(Exception exception) {
+    return ApiResponse.failure("adoption application was updated by another request");
   }
 
   @ExceptionHandler(MethodArgumentNotValidException.class)

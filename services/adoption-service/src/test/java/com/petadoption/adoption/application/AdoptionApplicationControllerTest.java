@@ -393,6 +393,29 @@ class AdoptionApplicationControllerTest {
     assertOutboxProcessedCount(1);
   }
 
+  @Test
+  void staleReleaseOutboxDoesNotOverwriteNewActiveApplicationPetStatus() throws Exception {
+    String cancelledId = submitAndReturnId(USER_ID, PET_ID);
+    reset(petCatalogClient, eventPublisher);
+    doThrow(new RuntimeException("broker down")).when(eventPublisher).publish(any());
+
+    mockMvc.perform(post("/api/v1/adoptions/{id}/cancel", cancelledId)
+            .header(AuthHeaders.USER_ID, USER_ID))
+        .andExpect(status().isOk());
+
+    assertOutboxUnprocessedWithError(cancelledId, "broker down");
+    insertActiveApplication("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", OTHER_USER_ID, PET_ID);
+    reset(petCatalogClient, eventPublisher);
+
+    outboxDispatcher.dispatchPending();
+
+    verify(petCatalogClient, never()).updateAdoptionStatus(UUID.fromString(PET_ID), "AVAILABLE");
+    AdoptionEvent event = captureOnlyEvent();
+    assertThat(event.eventType()).isEqualTo(AdoptionEvents.CANCELLED);
+    assertThat(event.applicationId()).isEqualTo(UUID.fromString(cancelledId));
+    assertOutboxProcessedCount(2);
+  }
+
   private String submitAndReturnId(String userId, String petId) throws Exception {
     MvcResult result = mockMvc.perform(post("/api/v1/adoptions")
             .header(AuthHeaders.USER_ID, userId)
@@ -440,6 +463,19 @@ class AdoptionApplicationControllerTest {
         String.class,
         UUID.fromString(applicationId));
     assertThat(error).contains(errorText);
+  }
+
+  private void insertActiveApplication(String applicationId, String userId, String petId) {
+    jdbcTemplate.update(
+        """
+            INSERT INTO adoption_schema.adoption_applications
+              (id, pet_id, active_pet_id, user_id, reason, experience, status, created_at, updated_at)
+            VALUES (?, ?, ?, ?, 'reason', 'experience', 'SUBMITTED', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+            """,
+        UUID.fromString(applicationId),
+        UUID.fromString(petId),
+        UUID.fromString(petId),
+        UUID.fromString(userId));
   }
 
   private static String applicationJson(String petId) {

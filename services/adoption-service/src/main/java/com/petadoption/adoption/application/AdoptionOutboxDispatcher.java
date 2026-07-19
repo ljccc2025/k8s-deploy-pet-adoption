@@ -10,15 +10,20 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class AdoptionOutboxDispatcher {
+  private static final String AVAILABLE = "AVAILABLE";
+
   private final AdoptionOutboxEventRepository repository;
+  private final AdoptionApplicationRepository applicationRepository;
   private final PetCatalogClient petCatalogClient;
   private final AdoptionEventPublisher eventPublisher;
 
   AdoptionOutboxDispatcher(
       AdoptionOutboxEventRepository repository,
+      AdoptionApplicationRepository applicationRepository,
       PetCatalogClient petCatalogClient,
       AdoptionEventPublisher eventPublisher) {
     this.repository = repository;
+    this.applicationRepository = applicationRepository;
     this.petCatalogClient = petCatalogClient;
     this.eventPublisher = eventPublisher;
   }
@@ -36,7 +41,7 @@ public class AdoptionOutboxDispatcher {
 
   private void dispatch(AdoptionOutboxEvent event) {
     try {
-      if (event.petStatusUpdate() != null) {
+      if (shouldUpdatePetStatus(event)) {
         petCatalogClient.updateAdoptionStatus(event.petId(), event.petStatusUpdate());
       }
       eventPublisher.publish(event.toAdoptionEvent());
@@ -45,5 +50,12 @@ public class AdoptionOutboxDispatcher {
       event.markFailed(exception);
     }
     repository.save(event);
+  }
+
+  private boolean shouldUpdatePetStatus(AdoptionOutboxEvent event) {
+    if (event.petStatusUpdate() == null) {
+      return false;
+    }
+    return !AVAILABLE.equals(event.petStatusUpdate()) || !applicationRepository.existsByActivePetId(event.petId());
   }
 }
