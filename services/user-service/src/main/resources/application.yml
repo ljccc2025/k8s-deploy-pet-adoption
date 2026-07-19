@@ -1,6 +1,20 @@
 spring:
   application:
     name: user-service
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/pet_adoption}
+    username: ${DB_USERNAME:pet}
+    password: ${DB_PASSWORD:pet}
+  flyway:
+    schemas: user_schema
+    default-schema: user_schema
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        default_schema: user_schema
 
 server:
   port: 8082
