@@ -114,9 +114,12 @@ README 需要写明：
 
 ```bash
 git status --short
+mvn -q validate
 ```
 
 预期：只出现本任务创建或修改的文件。
+
+预期：`mvn -q validate` PASS。
 
 - [ ] **步骤 4：Commit**
 
@@ -137,9 +140,36 @@ git commit -m "chore(项目): 初始化微服务仓库结构"
 - 创建：`libs/common/src/main/java/com/petadoption/common/events/AdoptionEvents.java`
 - 创建：`libs/common/src/test/java/com/petadoption/common/api/ApiResponseTest.java`
 
-- [ ] **步骤 0：将 common 加入根 Maven modules**
+- [ ] **步骤 0：创建 common 模块 POM，再加入根 Maven modules**
 
-修改根 `pom.xml`，把 `libs/common` 加入 `<modules>`。因为本任务会创建 `libs/common/pom.xml`，此时激活该模块不会破坏 `mvn validate`。
+先创建 `libs/common/pom.xml` 的最小可解析 POM：
+
+```xml
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>com.petadoption</groupId>
+    <artifactId>pet-adoption-platform</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
+    <relativePath>../../pom.xml</relativePath>
+  </parent>
+
+  <artifactId>common</artifactId>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+</project>
+```
+
+再修改根 `pom.xml`，把 `libs/common` 加入 `<modules>`。此时模块 POM 已存在，激活该模块不会破坏 `mvn validate`。
 
 ```xml
 <modules>
