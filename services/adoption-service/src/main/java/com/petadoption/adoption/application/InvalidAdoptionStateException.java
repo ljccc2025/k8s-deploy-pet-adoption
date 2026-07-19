@@ -1,7 +1,7 @@
 package com.petadoption.adoption.application;
 
-class InvalidAdoptionStateException extends RuntimeException {
-  InvalidAdoptionStateException(String message) {
+public class InvalidAdoptionStateException extends RuntimeException {
+  public InvalidAdoptionStateException(String message) {
     super(message);
   }
 }

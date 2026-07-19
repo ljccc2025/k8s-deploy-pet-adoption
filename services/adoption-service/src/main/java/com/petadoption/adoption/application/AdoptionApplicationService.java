@@ -16,18 +16,22 @@ class AdoptionApplicationService {
   private final AdoptionApplicationRepository repository;
   private final PetCatalogClient petCatalogClient;
   private final AdoptionEventPublisher eventPublisher;
+  private final PostCommitActionRunner postCommitActionRunner;
 
   AdoptionApplicationService(
       AdoptionApplicationRepository repository,
       PetCatalogClient petCatalogClient,
-      AdoptionEventPublisher eventPublisher) {
+      AdoptionEventPublisher eventPublisher,
+      PostCommitActionRunner postCommitActionRunner) {
     this.repository = repository;
     this.petCatalogClient = petCatalogClient;
     this.eventPublisher = eventPublisher;
+    this.postCommitActionRunner = postCommitActionRunner;
   }
 
   @Transactional
   AdoptionApplicationResponse submit(UUID userId, SubmitApplicationRequest request) {
+    petCatalogClient.requireAvailable(request.petId());
     LocalDateTime now = LocalDateTime.now();
     AdoptionApplication application = new AdoptionApplication(
         UUID.randomUUID(),
@@ -37,8 +41,10 @@ class AdoptionApplicationService {
         request.experience().trim(),
         now);
     AdoptionApplication saved = repository.save(application);
-    petCatalogClient.updateAdoptionStatus(saved.petId(), "PENDING");
-    publish(AdoptionEvents.SUBMITTED, saved);
+    postCommitActionRunner.runAfterCommit(() -> {
+      petCatalogClient.updateAdoptionStatus(saved.petId(), "PENDING");
+      publish(AdoptionEvents.SUBMITTED, saved);
+    });
     return AdoptionApplicationResponse.from(saved);
   }
 
@@ -60,8 +66,10 @@ class AdoptionApplicationService {
   AdoptionApplicationResponse approve(UUID id, UUID reviewerId) {
     AdoptionApplication application = find(id);
     application.approve(reviewerId, LocalDateTime.now());
-    petCatalogClient.updateAdoptionStatus(application.petId(), "ADOPTED");
-    publish(AdoptionEvents.APPROVED, application);
+    postCommitActionRunner.runAfterCommit(() -> {
+      petCatalogClient.updateAdoptionStatus(application.petId(), "ADOPTED");
+      publish(AdoptionEvents.APPROVED, application);
+    });
     return AdoptionApplicationResponse.from(application);
   }
 
@@ -69,7 +77,7 @@ class AdoptionApplicationService {
   AdoptionApplicationResponse reject(UUID id, UUID reviewerId, ReviewApplicationRequest request) {
     AdoptionApplication application = find(id);
     application.reject(reviewerId, trimOptional(request == null ? null : request.reviewComment()), LocalDateTime.now());
-    publish(AdoptionEvents.REJECTED, application);
+    postCommitActionRunner.runAfterCommit(() -> publish(AdoptionEvents.REJECTED, application));
     return AdoptionApplicationResponse.from(application);
   }
 
@@ -77,7 +85,7 @@ class AdoptionApplicationService {
   AdoptionApplicationResponse cancel(UUID id, UUID userId) {
     AdoptionApplication application = find(id);
     application.cancel(userId, LocalDateTime.now());
-    publish(AdoptionEvents.CANCELLED, application);
+    postCommitActionRunner.runAfterCommit(() -> publish(AdoptionEvents.CANCELLED, application));
     return AdoptionApplicationResponse.from(application);
   }
 
