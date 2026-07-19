@@ -35,6 +35,9 @@ class AdoptionOutboxEvent {
   @Column(name = "processed_at")
   private Instant processedAt;
 
+  @Column(name = "pet_status_applied_at")
+  private Instant petStatusAppliedAt;
+
   @Column(name = "error_message", columnDefinition = "TEXT")
   private String errorMessage;
 
@@ -78,6 +81,10 @@ class AdoptionOutboxEvent {
     this.errorMessage = null;
   }
 
+  void markPetStatusApplied(Instant petStatusAppliedAt) {
+    this.petStatusAppliedAt = petStatusAppliedAt;
+  }
+
   void markFailed(Exception exception) {
     this.errorMessage = exception.getMessage();
   }
@@ -88,5 +95,9 @@ class AdoptionOutboxEvent {
 
   String petStatusUpdate() {
     return petStatusUpdate;
+  }
+
+  boolean hasPetStatusApplied() {
+    return petStatusAppliedAt != null;
   }
 }

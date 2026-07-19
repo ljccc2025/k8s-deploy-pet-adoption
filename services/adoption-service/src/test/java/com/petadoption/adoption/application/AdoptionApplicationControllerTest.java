@@ -7,6 +7,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -363,12 +364,13 @@ class AdoptionApplicationControllerTest {
     String applicationId = submitAndReturnId(USER_ID, PET_ID);
 
     assertOutboxUnprocessedWithError(applicationId, "broker down");
+    assertOutboxPetStatusApplied(applicationId, AdoptionEvents.SUBMITTED);
     verify(petCatalogClient).updateAdoptionStatus(UUID.fromString(PET_ID), "PENDING");
-    reset(petCatalogClient, eventPublisher);
+    reset(eventPublisher);
 
     outboxDispatcher.dispatchPending();
 
-    verify(petCatalogClient).updateAdoptionStatus(UUID.fromString(PET_ID), "PENDING");
+    verify(petCatalogClient, times(1)).updateAdoptionStatus(UUID.fromString(PET_ID), "PENDING");
     AdoptionEvent event = captureOnlyEvent();
     assertThat(event.eventType()).isEqualTo(AdoptionEvents.SUBMITTED);
     assertOutboxProcessedCount(1);
@@ -413,6 +415,7 @@ class AdoptionApplicationControllerTest {
     AdoptionEvent event = captureOnlyEvent();
     assertThat(event.eventType()).isEqualTo(AdoptionEvents.CANCELLED);
     assertThat(event.applicationId()).isEqualTo(UUID.fromString(cancelledId));
+    assertOutboxPetStatusApplied(cancelledId, AdoptionEvents.CANCELLED);
     assertOutboxProcessedCount(2);
   }
 
@@ -463,6 +466,19 @@ class AdoptionApplicationControllerTest {
         String.class,
         UUID.fromString(applicationId));
     assertThat(error).contains(errorText);
+  }
+
+  private void assertOutboxPetStatusApplied(String applicationId, String eventType) {
+    Integer count = jdbcTemplate.queryForObject(
+        """
+            SELECT COUNT(*)
+            FROM adoption_schema.adoption_outbox_events
+            WHERE application_id = ? AND event_type = ? AND pet_status_applied_at IS NOT NULL
+            """,
+        Integer.class,
+        UUID.fromString(applicationId),
+        eventType);
+    assertThat(count).isEqualTo(1);
   }
 
   private void insertActiveApplication(String applicationId, String userId, String petId) {

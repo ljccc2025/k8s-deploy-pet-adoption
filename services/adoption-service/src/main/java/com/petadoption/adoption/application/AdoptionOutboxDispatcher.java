@@ -41,9 +41,7 @@ public class AdoptionOutboxDispatcher {
 
   private void dispatch(AdoptionOutboxEvent event) {
     try {
-      if (shouldUpdatePetStatus(event)) {
-        petCatalogClient.updateAdoptionStatus(event.petId(), event.petStatusUpdate());
-      }
+      applyPetStatusIfNeeded(event);
       eventPublisher.publish(event.toAdoptionEvent());
       event.markProcessed(Instant.now());
     } catch (Exception exception) {
@@ -52,10 +50,19 @@ public class AdoptionOutboxDispatcher {
     repository.save(event);
   }
 
-  private boolean shouldUpdatePetStatus(AdoptionOutboxEvent event) {
-    if (event.petStatusUpdate() == null) {
-      return false;
+  private void applyPetStatusIfNeeded(AdoptionOutboxEvent event) {
+    if (event.petStatusUpdate() == null || event.hasPetStatusApplied()) {
+      return;
     }
-    return !AVAILABLE.equals(event.petStatusUpdate()) || !applicationRepository.existsByActivePetId(event.petId());
+    if (shouldSkipAvailableRelease(event)) {
+      event.markPetStatusApplied(Instant.now());
+      return;
+    }
+    petCatalogClient.updateAdoptionStatus(event.petId(), event.petStatusUpdate());
+    event.markPetStatusApplied(Instant.now());
+  }
+
+  private boolean shouldSkipAvailableRelease(AdoptionOutboxEvent event) {
+    return AVAILABLE.equals(event.petStatusUpdate()) && applicationRepository.existsByActivePetId(event.petId());
   }
 }
