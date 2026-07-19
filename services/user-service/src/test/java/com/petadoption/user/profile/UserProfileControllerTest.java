@@ -35,4 +35,28 @@ class UserProfileControllerTest {
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.data.displayName").value("Alice"));
   }
+
+  @Test
+  void upsertRejectsTooLongDisplayName() throws Exception {
+    String tooLongDisplayName = "A".repeat(101);
+
+    mockMvc.perform(put("/api/v1/users/me/profile")
+        .header(AuthHeaders.USER_ID, USER_ID)
+        .contentType(MediaType.APPLICATION_JSON)
+        .content("""
+          {"displayName":"%s","phone":"13800000000","city":"Shanghai","housing":"Owned"}
+        """.formatted(tooLongDisplayName)))
+      .andExpect(status().isBadRequest());
+  }
+
+  @Test
+  void upsertRejectsBlankDisplayName() throws Exception {
+    mockMvc.perform(put("/api/v1/users/me/profile")
+        .header(AuthHeaders.USER_ID, USER_ID)
+        .contentType(MediaType.APPLICATION_JSON)
+        .content("""
+          {"displayName":" ","phone":"13800000000","city":"Shanghai","housing":"Owned"}
+        """))
+      .andExpect(status().isBadRequest());
+  }
 }

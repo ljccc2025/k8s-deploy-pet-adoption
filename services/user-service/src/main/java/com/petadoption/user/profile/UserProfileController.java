@@ -2,6 +2,7 @@ package com.petadoption.user.profile;
 
 import com.petadoption.common.api.ApiResponse;
 import com.petadoption.common.security.AuthHeaders;
+import jakarta.validation.Valid;
 import java.util.UUID;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -22,7 +23,7 @@ class UserProfileController {
   @PutMapping("/me/profile")
   ApiResponse<UserProfileResponse> upsert(
       @RequestHeader(AuthHeaders.USER_ID) UUID userId,
-      @RequestBody UpsertProfileRequest request) {
+      @Valid @RequestBody UpsertProfileRequest request) {
     return ApiResponse.success(profileService.upsert(userId, request));
   }
 
