@@ -14,6 +14,15 @@
 
   <modules>
     <module>libs/common</module>
+    <module>services/api-gateway</module>
+    <module>services/auth-service</module>
+    <module>services/user-service</module>
+    <module>services/pet-service</module>
+    <module>services/adoption-service</module>
+    <module>services/notification-service</module>
+    <module>services/file-service</module>
+    <module>services/admin-service</module>
+    <module>services/recommendation-service</module>
   </modules>
 
   <properties>
@@ -23,20 +32,6 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
   </properties>
-
-  <!--
-    Future modules will be added when their directories are created:
-    libs/common
-    services/api-gateway
-    services/auth-service
-    services/user-service
-    services/pet-service
-    services/adoption-service
-    services/notification-service
-    services/file-service
-    services/admin-service
-    services/recommendation-service
-  -->
 
   <dependencyManagement>
     <dependencies>
