@@ -1,9 +1,36 @@
 spring:
   application:
     name: adoption-service
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/pet_adoption}
+    username: ${DB_USERNAME:pet}
+    password: ${DB_PASSWORD:pet}
+  flyway:
+    schemas: adoption_schema
+    default-schema: adoption_schema
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        default_schema: adoption_schema
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
 
 server:
   port: 8084
+
+pet-service:
+  base-url: ${PET_SERVICE_BASE_URL:http://localhost:8083}
+
+adoption:
+  events:
+    exchange: ${ADOPTION_EVENTS_EXCHANGE:pet-adoption.events}
+    routing-key: ${ADOPTION_EVENTS_ROUTING_KEY:adoption.events}
 
 management:
   endpoints:

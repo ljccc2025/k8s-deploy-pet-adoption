@@ -1,0 +1,24 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:adoption_service;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH;DB_CLOSE_DELAY=-1
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  flyway:
+    schemas: adoption_schema
+    default-schema: adoption_schema
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        default_schema: adoption_schema
+
+pet-service:
+  base-url: http://localhost:8083
+
+adoption:
+  events:
+    exchange: pet-adoption.events
+    routing-key: adoption.events
