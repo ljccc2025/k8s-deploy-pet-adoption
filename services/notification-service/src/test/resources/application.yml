@@ -1,0 +1,25 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:notification_service;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH
+    username: sa
+    password:
+  flyway:
+    schemas: notification_schema
+    default-schema: notification_schema
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        default_schema: notification_schema
+  rabbitmq:
+    listener:
+      simple:
+        auto-startup: false
+
+notification:
+  events:
+    exchange: pet-adoption.events
+    routing-key: adoption.events
+    queue: adoption.notifications

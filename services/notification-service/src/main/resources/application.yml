@@ -1,9 +1,34 @@
 spring:
   application:
     name: notification-service
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/pet_adoption}
+    username: ${DB_USERNAME:pet}
+    password: ${DB_PASSWORD:pet}
+  flyway:
+    schemas: notification_schema
+    default-schema: notification_schema
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        default_schema: notification_schema
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
 
 server:
   port: 8085
+
+notification:
+  events:
+    exchange: ${ADOPTION_EVENTS_EXCHANGE:pet-adoption.events}
+    routing-key: ${ADOPTION_EVENTS_ROUTING_KEY:adoption.events}
+    queue: ${ADOPTION_NOTIFICATIONS_QUEUE:adoption.notifications}
 
 management:
   endpoints:
