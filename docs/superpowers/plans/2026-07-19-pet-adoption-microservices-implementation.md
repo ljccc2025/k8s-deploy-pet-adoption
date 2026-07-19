@@ -60,9 +60,9 @@ services/
 - 创建：`docs/manual-test-checklist.md`
 - 创建：`pom.xml`
 
-- [ ] **步骤 1：编写根 Maven 聚合配置**
+- [ ] **步骤 1：编写根 Maven 配置**
 
-在 `pom.xml` 中声明根项目和模块。根项目只做版本管理和聚合，不放业务代码。
+在 `pom.xml` 中声明根项目。根项目只做版本管理，不放业务代码。任务 1 不创建模块目录，因此不要激活 `<modules>`；只用注释记录未来模块清单，保证根目录 `mvn -q validate` 可以通过。
 
 ```xml
 <project xmlns="http://maven.apache.org/POM/4.0.0"
@@ -81,18 +81,19 @@ services/
     <spring-cloud.version>2025.0.0</spring-cloud.version>
   </properties>
 
-  <modules>
-    <module>libs/common</module>
-    <module>services/api-gateway</module>
-    <module>services/auth-service</module>
-    <module>services/user-service</module>
-    <module>services/pet-service</module>
-    <module>services/adoption-service</module>
-    <module>services/notification-service</module>
-    <module>services/file-service</module>
-    <module>services/admin-service</module>
-    <module>services/recommendation-service</module>
-  </modules>
+  <!--
+    Future modules will be added when their directories are created:
+    libs/common
+    services/api-gateway
+    services/auth-service
+    services/user-service
+    services/pet-service
+    services/adoption-service
+    services/notification-service
+    services/file-service
+    services/admin-service
+    services/recommendation-service
+  -->
 </project>
 ```
 
@@ -135,6 +136,16 @@ git commit -m "chore(项目): 初始化微服务仓库结构"
 - 创建：`libs/common/src/main/java/com/petadoption/common/security/AuthHeaders.java`
 - 创建：`libs/common/src/main/java/com/petadoption/common/events/AdoptionEvents.java`
 - 创建：`libs/common/src/test/java/com/petadoption/common/api/ApiResponseTest.java`
+
+- [ ] **步骤 0：将 common 加入根 Maven modules**
+
+修改根 `pom.xml`，把 `libs/common` 加入 `<modules>`。因为本任务会创建 `libs/common/pom.xml`，此时激活该模块不会破坏 `mvn validate`。
+
+```xml
+<modules>
+  <module>libs/common</module>
+</modules>
+```
 
 - [ ] **步骤 1：编写失败测试**
 
