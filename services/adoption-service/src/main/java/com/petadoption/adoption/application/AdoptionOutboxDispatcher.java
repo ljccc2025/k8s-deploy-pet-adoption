@@ -3,7 +3,6 @@ package com.petadoption.adoption.application;
 import com.petadoption.adoption.client.PetCatalogClient;
 import com.petadoption.adoption.messaging.AdoptionEventPublisher;
 import java.time.Instant;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,11 +25,6 @@ public class AdoptionOutboxDispatcher {
     this.applicationRepository = applicationRepository;
     this.petCatalogClient = petCatalogClient;
     this.eventPublisher = eventPublisher;
-  }
-
-  @Scheduled(fixedDelayString = "${adoption.outbox.dispatch-fixed-delay-ms:5000}")
-  void dispatchOnSchedule() {
-    dispatchPending();
   }
 
   @Transactional(propagation = Propagation.REQUIRES_NEW)

@@ -19,6 +19,8 @@ pet-service:
   base-url: http://localhost:8083
 
 adoption:
+  outbox:
+    scheduling-enabled: false
   events:
     exchange: pet-adoption.events
     routing-key: adoption.events
