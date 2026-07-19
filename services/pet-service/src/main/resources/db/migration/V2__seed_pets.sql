@@ -1,0 +1,56 @@
+INSERT INTO pet_schema.pets (
+  id,
+  name,
+  type,
+  gender,
+  age_months,
+  city,
+  health_status,
+  adoption_status,
+  image_url,
+  description,
+  created_at,
+  updated_at
+) VALUES
+(
+  '11111111-2222-3333-4444-555555555555',
+  'Milo',
+  'Dog',
+  'Male',
+  12,
+  'Shanghai',
+  'Vaccinated',
+  'AVAILABLE',
+  'https://example.com/milo.jpg',
+  'Friendly young dog ready for an active family.',
+  '2026-01-01 10:00:00',
+  '2026-01-01 10:00:00'
+),
+(
+  '22222222-3333-4444-5555-666666666666',
+  'Luna',
+  'Cat',
+  'Female',
+  8,
+  'Hangzhou',
+  'Healthy',
+  'AVAILABLE',
+  'https://example.com/luna.jpg',
+  'Quiet kitten who enjoys sunny windows.',
+  '2026-01-02 10:00:00',
+  '2026-01-02 10:00:00'
+),
+(
+  '33333333-4444-5555-6666-777777777777',
+  'Cooper',
+  'Dog',
+  'Male',
+  24,
+  'Suzhou',
+  'Dewormed',
+  'PENDING',
+  NULL,
+  'Gentle adult dog currently in adoption review.',
+  '2026-01-03 10:00:00',
+  '2026-01-03 10:00:00'
+);
