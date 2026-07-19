@@ -18,6 +18,9 @@ class AdoptionApplication {
   @Column(name = "pet_id", nullable = false)
   private UUID petId;
 
+  @Column(name = "active_pet_id")
+  private UUID activePetId;
+
   @Column(name = "user_id", nullable = false)
   private UUID userId;
 
@@ -49,6 +52,7 @@ class AdoptionApplication {
   AdoptionApplication(UUID id, UUID petId, UUID userId, String reason, String experience, LocalDateTime now) {
     this.id = id;
     this.petId = petId;
+    this.activePetId = petId;
     this.userId = userId;
     this.reason = reason;
     this.experience = experience;
@@ -69,6 +73,7 @@ class AdoptionApplication {
     this.status = AdoptionApplicationStatus.REJECTED;
     this.reviewerId = reviewerId;
     this.reviewComment = reviewComment;
+    this.activePetId = null;
     this.updatedAt = now;
   }
 
@@ -78,6 +83,7 @@ class AdoptionApplication {
     }
     requireSubmitted();
     this.status = AdoptionApplicationStatus.CANCELLED;
+    this.activePetId = null;
     this.updatedAt = now;
   }
 

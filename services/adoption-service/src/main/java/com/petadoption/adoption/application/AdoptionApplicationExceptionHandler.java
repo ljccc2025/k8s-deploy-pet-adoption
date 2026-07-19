@@ -19,6 +19,12 @@ class AdoptionApplicationExceptionHandler {
     return ApiResponse.failure("adoption application not found");
   }
 
+  @ExceptionHandler(PetCatalogNotFoundException.class)
+  @ResponseStatus(HttpStatus.NOT_FOUND)
+  ApiResponse<Void> petNotFound(PetCatalogNotFoundException exception) {
+    return ApiResponse.failure(exception.getMessage());
+  }
+
   @ExceptionHandler(InvalidAdoptionStateException.class)
   @ResponseStatus(HttpStatus.CONFLICT)
   ApiResponse<Void> invalidState(InvalidAdoptionStateException exception) {

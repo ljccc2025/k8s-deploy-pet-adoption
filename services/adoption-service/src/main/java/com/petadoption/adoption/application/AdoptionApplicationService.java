@@ -1,32 +1,33 @@
 package com.petadoption.adoption.application;
 
 import com.petadoption.adoption.client.PetCatalogClient;
-import com.petadoption.adoption.messaging.AdoptionEvent;
-import com.petadoption.adoption.messaging.AdoptionEventPublisher;
 import com.petadoption.common.events.AdoptionEvents;
-import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 class AdoptionApplicationService {
   private final AdoptionApplicationRepository repository;
+  private final AdoptionOutboxEventRepository outboxRepository;
   private final PetCatalogClient petCatalogClient;
-  private final AdoptionEventPublisher eventPublisher;
   private final PostCommitActionRunner postCommitActionRunner;
+  private final AdoptionOutboxDispatcher outboxDispatcher;
 
   AdoptionApplicationService(
       AdoptionApplicationRepository repository,
+      AdoptionOutboxEventRepository outboxRepository,
       PetCatalogClient petCatalogClient,
-      AdoptionEventPublisher eventPublisher,
-      PostCommitActionRunner postCommitActionRunner) {
+      PostCommitActionRunner postCommitActionRunner,
+      AdoptionOutboxDispatcher outboxDispatcher) {
     this.repository = repository;
+    this.outboxRepository = outboxRepository;
     this.petCatalogClient = petCatalogClient;
-    this.eventPublisher = eventPublisher;
     this.postCommitActionRunner = postCommitActionRunner;
+    this.outboxDispatcher = outboxDispatcher;
   }
 
   @Transactional
@@ -40,11 +41,8 @@ class AdoptionApplicationService {
         request.reason().trim(),
         request.experience().trim(),
         now);
-    AdoptionApplication saved = repository.save(application);
-    postCommitActionRunner.runAfterCommit(() -> {
-      petCatalogClient.updateAdoptionStatus(saved.petId(), "PENDING");
-      publish(AdoptionEvents.SUBMITTED, saved);
-    });
+    AdoptionApplication saved = saveNewApplication(application);
+    enqueue(AdoptionEvents.SUBMITTED, saved, "PENDING");
     return AdoptionApplicationResponse.from(saved);
   }
 
@@ -66,10 +64,7 @@ class AdoptionApplicationService {
   AdoptionApplicationResponse approve(UUID id, UUID reviewerId) {
     AdoptionApplication application = find(id);
     application.approve(reviewerId, LocalDateTime.now());
-    postCommitActionRunner.runAfterCommit(() -> {
-      petCatalogClient.updateAdoptionStatus(application.petId(), "ADOPTED");
-      publish(AdoptionEvents.APPROVED, application);
-    });
+    enqueue(AdoptionEvents.APPROVED, application, "ADOPTED");
     return AdoptionApplicationResponse.from(application);
   }
 
@@ -77,7 +72,7 @@ class AdoptionApplicationService {
   AdoptionApplicationResponse reject(UUID id, UUID reviewerId, ReviewApplicationRequest request) {
     AdoptionApplication application = find(id);
     application.reject(reviewerId, trimOptional(request == null ? null : request.reviewComment()), LocalDateTime.now());
-    postCommitActionRunner.runAfterCommit(() -> publish(AdoptionEvents.REJECTED, application));
+    enqueue(AdoptionEvents.REJECTED, application, "AVAILABLE");
     return AdoptionApplicationResponse.from(application);
   }
 
@@ -85,7 +80,7 @@ class AdoptionApplicationService {
   AdoptionApplicationResponse cancel(UUID id, UUID userId) {
     AdoptionApplication application = find(id);
     application.cancel(userId, LocalDateTime.now());
-    postCommitActionRunner.runAfterCommit(() -> publish(AdoptionEvents.CANCELLED, application));
+    enqueue(AdoptionEvents.CANCELLED, application, "AVAILABLE");
     return AdoptionApplicationResponse.from(application);
   }
 
@@ -93,13 +88,17 @@ class AdoptionApplicationService {
     return repository.findById(id).orElseThrow(AdoptionApplicationNotFoundException::new);
   }
 
-  private void publish(String eventType, AdoptionApplication application) {
-    eventPublisher.publish(new AdoptionEvent(
-        eventType,
-        application.id(),
-        application.petId(),
-        application.userId(),
-        Instant.now()));
+  private AdoptionApplication saveNewApplication(AdoptionApplication application) {
+    try {
+      return repository.saveAndFlush(application);
+    } catch (DataIntegrityViolationException exception) {
+      throw new InvalidAdoptionStateException("pet already has an active adoption application");
+    }
+  }
+
+  private void enqueue(String eventType, AdoptionApplication application, String petStatusUpdate) {
+    outboxRepository.save(AdoptionOutboxEvent.create(eventType, application, petStatusUpdate));
+    postCommitActionRunner.runAfterCommit(outboxDispatcher::dispatchPending);
   }
 
   private static String trimOptional(String value) {
