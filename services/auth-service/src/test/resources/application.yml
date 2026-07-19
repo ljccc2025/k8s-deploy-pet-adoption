@@ -1,0 +1,21 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:auth_service;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH;DB_CLOSE_DELAY=-1
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  flyway:
+    schemas: auth_schema
+    default-schema: auth_schema
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        default_schema: auth_schema
+
+jwt:
+  issuer: pet-adoption-auth-service-test
+  secret: test-local-secret-at-least-32-bytes-for-hmac
+  access-token-ttl-minutes: 60

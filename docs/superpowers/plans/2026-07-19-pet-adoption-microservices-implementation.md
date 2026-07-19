@@ -56,13 +56,14 @@ services/
 - 修改：`README.md`
 - 创建：`.editorconfig`
 - 创建：`.env.example`
+- 创建：`.gitignore`
 - 创建：`docs/local-development.md`
 - 创建：`docs/manual-test-checklist.md`
 - 创建：`pom.xml`
 
-- [ ] **步骤 1：编写根 Maven 聚合配置**
+- [ ] **步骤 1：编写根 Maven 配置**
 
-在 `pom.xml` 中声明根项目和模块。根项目只做版本管理和聚合，不放业务代码。
+在 `pom.xml` 中声明根项目。根项目只做版本管理，不放业务代码。任务 1 不创建模块目录，因此不要激活 `<modules>`；只用注释记录未来模块清单，保证根目录 `mvn -q validate` 可以通过。
 
 ```xml
 <project xmlns="http://maven.apache.org/POM/4.0.0"
@@ -81,18 +82,19 @@ services/
     <spring-cloud.version>2025.0.0</spring-cloud.version>
   </properties>
 
-  <modules>
-    <module>libs/common</module>
-    <module>services/api-gateway</module>
-    <module>services/auth-service</module>
-    <module>services/user-service</module>
-    <module>services/pet-service</module>
-    <module>services/adoption-service</module>
-    <module>services/notification-service</module>
-    <module>services/file-service</module>
-    <module>services/admin-service</module>
-    <module>services/recommendation-service</module>
-  </modules>
+  <!--
+    Future modules will be added when their directories are created:
+    libs/common
+    services/api-gateway
+    services/auth-service
+    services/user-service
+    services/pet-service
+    services/adoption-service
+    services/notification-service
+    services/file-service
+    services/admin-service
+    services/recommendation-service
+  -->
 </project>
 ```
 
@@ -113,14 +115,17 @@ README 需要写明：
 
 ```bash
 git status --short
+mvn -q validate
 ```
 
 预期：只出现本任务创建或修改的文件。
 
+预期：`mvn -q validate` PASS。
+
 - [ ] **步骤 4：Commit**
 
 ```bash
-git add README.md .editorconfig .env.example docs/local-development.md docs/manual-test-checklist.md pom.xml
+git add README.md .editorconfig .env.example .gitignore docs/local-development.md docs/manual-test-checklist.md pom.xml
 git commit -m "chore(项目): 初始化微服务仓库结构"
 ```
 
@@ -135,6 +140,43 @@ git commit -m "chore(项目): 初始化微服务仓库结构"
 - 创建：`libs/common/src/main/java/com/petadoption/common/security/AuthHeaders.java`
 - 创建：`libs/common/src/main/java/com/petadoption/common/events/AdoptionEvents.java`
 - 创建：`libs/common/src/test/java/com/petadoption/common/api/ApiResponseTest.java`
+
+- [ ] **步骤 0：创建 common 模块 POM，再加入根 Maven modules**
+
+先创建 `libs/common/pom.xml` 的最小可解析 POM：
+
+```xml
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>com.petadoption</groupId>
+    <artifactId>pet-adoption-platform</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
+    <relativePath>../../pom.xml</relativePath>
+  </parent>
+
+  <artifactId>common</artifactId>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+</project>
+```
+
+再修改根 `pom.xml`，把 `libs/common` 加入 `<modules>`。此时模块 POM 已存在，激活该模块不会破坏 `mvn validate`。
+
+```xml
+<modules>
+  <module>libs/common</module>
+</modules>
+```
 
 - [ ] **步骤 1：编写失败测试**
 
@@ -153,6 +195,14 @@ class ApiResponseTest {
     assertThat(response.success()).isTrue();
     assertThat(response.data()).isEqualTo("ok");
     assertThat(response.message()).isEqualTo("success");
+  }
+
+  @Test
+  void errorResponseContainsCodeAndMessage() {
+    ErrorResponse response = ErrorResponse.of("CODE", "message");
+
+    assertThat(response.code()).isEqualTo("CODE");
+    assertThat(response.message()).isEqualTo("message");
   }
 }
 ```
@@ -179,6 +229,16 @@ public record ApiResponse<T>(boolean success, String message, T data) {
 
   public static <T> ApiResponse<T> failure(String message) {
     return new ApiResponse<>(false, message, null);
+  }
+}
+```
+
+```java
+package com.petadoption.common.api;
+
+public record ErrorResponse(String code, String message) {
+  public static ErrorResponse of(String code, String message) {
+    return new ErrorResponse(code, message);
   }
 }
 ```
@@ -231,14 +291,19 @@ git commit -m "feat(公共库): 添加通用响应和事件常量"
 ## 任务 3：搭建后端服务骨架
 
 **文件：**
+- 修改：`pom.xml`
 - 创建：`services/*/pom.xml`
 - 创建：`services/*/src/main/java/com/petadoption/*/*Application.java`
 - 创建：`services/*/src/main/resources/application.yml`
 - 创建：`services/*/src/test/java/com/petadoption/*/*ApplicationTests.java`
 
-- [ ] **步骤 1：为每个服务创建 Maven 模块**
+- [ ] **步骤 1：创建所有服务 Maven POM**
 
-每个服务 `pom.xml` 使用相同模式。以 `pet-service` 为例：
+先创建所有 `services/*/pom.xml`，确认这些 POM 文件都存在且可解析，再修改根 `pom.xml` 加入 Maven modules。若先把不存在的服务目录加入根 `<modules>`，`mvn test` 会因为模块无法解析而失败。
+
+`api-gateway` 使用 Spring Cloud Gateway / WebFlux 专用 POM；其余业务服务使用普通 Spring MVC Web 模板。所有 Spring Boot 服务模块必须声明 `spring-boot-maven-plugin` 的 `repackage` execution，确保未使用 `spring-boot-starter-parent` 时 `mvn package` 仍能产出可通过 `java -jar` 运行的可执行 jar。插件版本由根 POM 的 `pluginManagement` 管理。
+
+业务服务 `pom.xml` 使用相同模式。以 `pet-service` 为例：
 
 ```xml
 <project xmlns="http://maven.apache.org/POM/4.0.0"
@@ -273,10 +338,99 @@ git commit -m "feat(公共库): 添加通用响应和事件常量"
       <scope>test</scope>
     </dependency>
   </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <goals>
+              <goal>repackage</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
 </project>
 ```
 
-- [ ] **步骤 2：创建应用入口**
+`api-gateway` 使用 WebFlux Gateway starter，不使用普通 `spring-boot-starter-web` MVC 模板：
+
+```xml
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>com.petadoption</groupId>
+    <artifactId>pet-adoption-platform</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
+    <relativePath>../../pom.xml</relativePath>
+  </parent>
+  <artifactId>api-gateway</artifactId>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.springframework.cloud</groupId>
+      <artifactId>spring-cloud-starter-gateway-server-webflux</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-actuator</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.petadoption</groupId>
+      <artifactId>common</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <goals>
+              <goal>repackage</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+</project>
+```
+
+- [ ] **步骤 2：将服务加入根 Maven modules**
+
+所有服务 POM 文件创建完成后，修改根 `pom.xml` 的 `<modules>`。最终至少包含：
+
+```xml
+<modules>
+  <module>libs/common</module>
+  <module>services/api-gateway</module>
+  <module>services/auth-service</module>
+  <module>services/user-service</module>
+  <module>services/pet-service</module>
+  <module>services/adoption-service</module>
+  <module>services/notification-service</module>
+  <module>services/file-service</module>
+  <module>services/admin-service</module>
+  <module>services/recommendation-service</module>
+</modules>
+```
+
+- [ ] **步骤 3：创建应用入口**
 
 ```java
 package com.petadoption.pet;
@@ -292,7 +446,7 @@ public class PetServiceApplication {
 }
 ```
 
-- [ ] **步骤 3：配置健康检查**
+- [ ] **步骤 4：配置健康检查**
 
 每个 `application.yml` 设置服务名、端口和 Actuator：
 
@@ -311,7 +465,7 @@ management:
         include: health,info
 ```
 
-- [ ] **步骤 4：运行后端聚合测试**
+- [ ] **步骤 5：运行后端聚合测试**
 
 运行：
 
@@ -321,7 +475,7 @@ mvn test
 
 预期：所有服务上下文加载测试 PASS。
 
-- [ ] **步骤 5：Commit**
+- [ ] **步骤 6：Commit**
 
 ```bash
 git add services pom.xml

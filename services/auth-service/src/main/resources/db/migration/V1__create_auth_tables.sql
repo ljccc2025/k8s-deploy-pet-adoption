@@ -1,0 +1,9 @@
+CREATE SCHEMA IF NOT EXISTS auth_schema;
+
+CREATE TABLE IF NOT EXISTS auth_schema.accounts (
+  id UUID PRIMARY KEY,
+  email TEXT NOT NULL UNIQUE,
+  password_hash TEXT NOT NULL,
+  role TEXT NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL
+);
