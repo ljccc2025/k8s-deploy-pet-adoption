@@ -10,3 +10,9 @@ management:
     web:
       exposure:
         include: health,info
+
+pet-service:
+  base-url: ${PET_SERVICE_BASE_URL:http://localhost:8083}
+
+adoption-service:
+  base-url: ${ADOPTION_SERVICE_BASE_URL:http://localhost:8084}
