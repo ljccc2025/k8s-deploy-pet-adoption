@@ -1,6 +1,24 @@
 spring:
   application:
     name: file-service
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/pet_adoption}
+    username: ${DB_USERNAME:pet}
+    password: ${DB_PASSWORD:pet}
+  flyway:
+    schemas: file_schema
+    default-schema: file_schema
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        default_schema: file_schema
+
+file:
+  storage:
+    root: ${FILE_STORAGE_ROOT:./uploads/file-service}
 
 server:
   port: 8086
