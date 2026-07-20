@@ -1,9 +1,50 @@
 spring:
   application:
     name: api-gateway
+  cloud:
+    gateway:
+      server:
+        webflux:
+          routes:
+            - id: auth-service
+              uri: ${AUTH_SERVICE_URL:http://localhost:8081}
+              predicates:
+                - Path=/api/v1/auth/**
+            - id: user-service
+              uri: ${USER_SERVICE_URL:http://localhost:8082}
+              predicates:
+                - Path=/api/v1/users/**
+            - id: pet-service
+              uri: ${PET_SERVICE_URL:http://localhost:8083}
+              predicates:
+                - Path=/api/v1/pets,/api/v1/pets/**,/api/v1/admin/pets,/api/v1/admin/pets/**,/api/v1/internal/pets/**
+            - id: adoption-service
+              uri: ${ADOPTION_SERVICE_URL:http://localhost:8084}
+              predicates:
+                - Path=/api/v1/adoptions,/api/v1/adoptions/**,/api/v1/admin/adoptions,/api/v1/admin/adoptions/**
+            - id: notification-service
+              uri: ${NOTIFICATION_SERVICE_URL:http://localhost:8085}
+              predicates:
+                - Path=/api/v1/notifications/**
+            - id: file-service
+              uri: ${FILE_SERVICE_URL:http://localhost:8086}
+              predicates:
+                - Path=/api/v1/files,/api/v1/files/**
+            - id: admin-service
+              uri: ${ADMIN_SERVICE_URL:http://localhost:8087}
+              predicates:
+                - Path=/api/v1/admin/dashboard
+            - id: recommendation-service
+              uri: ${RECOMMENDATION_SERVICE_URL:http://localhost:8088}
+              predicates:
+                - Path=/api/v1/recommendations/**
 
 server:
   port: 8080
+
+jwt:
+  issuer: ${JWT_ISSUER:pet-adoption-auth-service}
+  secret: ${JWT_SECRET:change-me-local-dev-secret-at-least-32-bytes}
 
 management:
   endpoints:
